@@ -12,7 +12,7 @@ contract UniswapPairOracle is Ownable {
     using FixedPoint for *;
     using SafeMath for uint256;
 
-    uint256 public PERIOD = 3600; // 60-minute TWAP (Time-Weighted Average Price)
+    uint256 public PERIOD = 600; // 60-minute TWAP (Time-Weighted Average Price)
 
     IUniswapV2Pair public immutable pair;
     address public immutable token0;

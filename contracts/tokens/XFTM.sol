@@ -5,7 +5,7 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 contract XFTM is ERC20Burnable {
-    uint256 public constant GENESIS_SUPPLY = 5000 ether; // 5000 will be minted at genesis for liq pool seeding
+    uint256 public constant GENESIS_SUPPLY = 100 ether; // 100 will be minted at genesis for liq pool seeding
 
     // CONTRACTS
     address public minter;
@@ -19,7 +19,7 @@ contract XFTM is ERC20Burnable {
 
     /* ========== CONSTRUCTOR ========= */
 
-    constructor() ERC20("BLAH Token", "BLAH") {
+    constructor() ERC20("Fantasm XFTM Token", "XFTM") {
         _mint(_msgSender(), GENESIS_SUPPLY);
     }
 

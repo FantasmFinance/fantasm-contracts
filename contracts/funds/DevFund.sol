@@ -4,10 +4,9 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IFantasm.sol";
 
-contract DevFund is Ownable, Initializable {
+contract DevFund is Ownable {
     using SafeERC20 for IFantasm;
 
     uint256 public immutable ALLOCATION;

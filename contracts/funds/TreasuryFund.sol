@@ -19,7 +19,7 @@ contract TreasuryFund is Ownable {
     // ======== CONSTRUCTOR ==================
 
     constructor(IFantasm _fantasm) {
-        require(address(_fantasm) != address(0), "DevFund::constructor: Invalid address");
+        require(address(_fantasm) != address(0), "TreasuryFund::constructor: Invalid address");
         fantasm = _fantasm;
         (ALLOCATION, VESTING_DURATION, VESTING_START) = fantasm.setTreasuryFund(address(this));
     }
@@ -47,9 +47,9 @@ contract TreasuryFund is Ownable {
     // ========= RESTRICTED FUNC ==================
 
     function transfer(address _receiver, uint256 _amount) external onlyOwner {
-        require(_receiver != address(0), "DevFund::transfer: Invalid address");
-        require(_amount > 0, "DevFund::transfer: invalid amount");
-        require(_amount <= claimable(), "DevFund::transfer: > vestedAmount");
+        require(_receiver != address(0), "TreasuryFund::transfer: Invalid address");
+        require(_amount > 0, "TreasuryFund::transfer: invalid amount");
+        require(_amount <= claimable(), "TreasuryFund::transfer: > vestedAmount");
 
         claimed_amount = claimed_amount + _amount;
         fantasm.mint(_receiver, _amount);

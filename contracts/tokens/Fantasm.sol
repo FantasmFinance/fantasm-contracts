@@ -12,12 +12,12 @@ contract Fantasm is ERC20Burnable {
     uint256 public constant GENESIS_SUPPLY = 1000 ether; // to provide liquidity at the beginning
 
     uint256 public constant DEV_ALLOCATION = 6_000_000 ether; // 20%
-    uint256 public constant DEV_VESTING_DURATION = 3 * 365 * 24 * 3600; // 3 years
-    uint256 public constant DEV_VESTING_START = 1645333200;
+    uint256 public constant DEV_VESTING_DURATION = 2 * 365 * 24 * 3600; // 2 years
+    uint256 public constant DEV_VESTING_START = 1650981600;
 
     uint256 public constant TREASURY_ALLOCATION = 3_000_000 ether; // 10%
     uint256 public constant TREASURY_VESTING_DURATION = 3 * 365 * 24 * 3600; // 3 years
-    uint256 public constant TREASURY_VESTING_START = 1645246800;
+    uint256 public constant TREASURY_VESTING_START = 1646143200;
 
     address public rewarder;
     address public pool;
@@ -26,7 +26,7 @@ contract Fantasm is ERC20Burnable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor() ERC20("FOO", "FOO") {
+    constructor() ERC20("Fantasm FSM Token", "FSM") {
         _mint(msg.sender, GENESIS_SUPPLY);
     }
 
@@ -75,16 +75,14 @@ contract Fantasm is ERC20Burnable {
         _vestingStart = DEV_VESTING_START;
     }
 
-    function setPool(address _newPool) external returns (bool) {
+    function setPool(address _pool) external returns (bool) {
         require(pool == address(0), "Fantasm::setPool: NOT_ALLOWED");
-        pool = _newPool;
+        pool = _pool;
         return true;
     }
 
-    // add back onlyMinters for PRODUCTION
-    function mint(address _to, uint256 _value) external returns (bool) {
+    function mint(address _to, uint256 _value) external onlyMinters {
         require(MAX_TOTAL_SUPPLY >= totalSupply() + _value, "Fantasm::mint: > MAX_TOTAL_SUPPLY");
         _mint(_to, _value);
-        return true;
     }
 }

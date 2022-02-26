@@ -7,14 +7,14 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "../interfaces/IRewardToken.sol";
+import "../interfaces/IFantasm.sol";
 import "../libs/WethUtils.sol";
 
-// Based on EPS' MultiFeeDistribution
+// Based on EPS's & Geist's MultiFeeDistribution
 contract MultiFeeDistribution is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    using SafeERC20 for IRewardToken;
+    using SafeERC20 for IFantasm;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -39,15 +39,15 @@ contract MultiFeeDistribution is ReentrancyGuard, Ownable {
         uint256 amount;
     }
 
-    IRewardToken public stakingToken;
+    IFantasm public stakingToken;
     address[] public rewardTokens;
     mapping(address => Reward) public rewardData;
 
     // Duration that rewards are streamed over
-    uint256 public constant rewardsDuration = 10 * 60; // 86400 * 7; // 1 week
+    uint256 public constant rewardsDuration = 86400 * 7; // 1 week
 
     // Duration of lock/earned penalty period
-    uint256 public constant lockDuration = rewardsDuration * 3; // 13; // 13 weeks
+    uint256 public constant lockDuration = rewardsDuration * 8; // 8 weeks
 
     // Addresses approved to call mint
     mapping(address => bool) public minters;
@@ -69,7 +69,7 @@ contract MultiFeeDistribution is ReentrancyGuard, Ownable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _stakingToken, address[] memory _minters) Ownable() {
-        stakingToken = IRewardToken(_stakingToken);
+        stakingToken = IFantasm(_stakingToken);
         stakingToken.setRewarder(address(this));
         for (uint256 i; i < _minters.length; i++) {
             minters[_minters[i]] = true;
@@ -78,6 +78,7 @@ contract MultiFeeDistribution is ReentrancyGuard, Ownable {
         // related to the 50% penalty and distribution to locked balances
         rewardTokens.push(_stakingToken);
         rewardData[_stakingToken].lastUpdateTime = block.timestamp;
+        rewardData[_stakingToken].periodFinish = block.timestamp;
     }
 
     /* ========== ADMIN CONFIGURATION ========== */
@@ -448,13 +449,14 @@ contract MultiFeeDistribution is ReentrancyGuard, Ownable {
         _;
     }
 
+    /// @notice fallback for payable -> required to unwrap WETH
+    receive() external payable {}
+
     /* ========== EVENTS ========== */
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
-    event RewardsDurationUpdated(address token, uint256 newDuration);
     event Recovered(address token, uint256 amount);
-    event MinterChanged(address indexed minter, bool added);
 }
