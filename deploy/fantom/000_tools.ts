@@ -10,6 +10,13 @@ const func: DeployFunction = async ({deployments, getNamedAccounts}) => {
     args: [deployer, 12 * 3600],
   });
 
+  await deploy('Timelock_7day', {
+    contract: 'Timelock',
+    from: deployer,
+    log: true,
+    args: [deployer, 7 * 24 * 3600],
+  });
+
   await deploy('Multicall', {
     from: deployer,
     log: true,

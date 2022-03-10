@@ -5,6 +5,7 @@ import 'hardhat-deploy-ethers';
 import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-etherscan';
 import {accounts, etherscanApiKey} from './utils/networks';
+import './utils/wellknown';
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -37,6 +38,11 @@ const config: HardhatUserConfig = {
       chainId: 250,
       accounts: accounts('fantom'),
     },
+    avax: {
+      url: 'https://api.avax.network/ext/bc/C/rpc',
+      chainId: 43114,
+      accounts: accounts('avax'),
+    },
   },
   gasReporter: {
     currency: 'USD',
@@ -47,7 +53,7 @@ const config: HardhatUserConfig = {
     apiKey: etherscanApiKey(),
   },
   namedAccounts: {
-    deployer: 0,
+    deployer: 0
   },
 };
 

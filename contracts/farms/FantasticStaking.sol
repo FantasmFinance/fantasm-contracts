@@ -7,14 +7,15 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "../interfaces/IFantasm.sol";
+import "../interfaces/IYToken.sol";
+import "../interfaces/IYTokenReserve.sol";
 import "../libs/WethUtils.sol";
 
 // Based on EPS's & Geist's MultiFeeDistribution
-contract MultiFeeDistribution is ReentrancyGuard, Ownable {
+contract FantasticStaking is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    using SafeERC20 for IFantasm;
+    using SafeERC20 for IYToken;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -39,7 +40,8 @@ contract MultiFeeDistribution is ReentrancyGuard, Ownable {
         uint256 amount;
     }
 
-    IFantasm public stakingToken;
+    IYToken public stakingToken;
+    IYTokenReserve public stakingTokenReserve;
     address[] public rewardTokens;
     mapping(address => Reward) public rewardData;
 
@@ -68,9 +70,14 @@ contract MultiFeeDistribution is ReentrancyGuard, Ownable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _stakingToken, address[] memory _minters) Ownable() {
-        stakingToken = IFantasm(_stakingToken);
-        stakingToken.setRewarder(address(this));
+    constructor(
+        address _stakingToken,
+        address _stakingTokenReserve,
+        address[] memory _minters
+    ) Ownable() {
+        stakingToken = IYToken(_stakingToken);
+        stakingTokenReserve = IYTokenReserve(_stakingTokenReserve);
+        stakingTokenReserve.setRewarder(address(this));
         for (uint256 i; i < _minters.length; i++) {
             minters[_minters[i]] = true;
         }
@@ -278,7 +285,7 @@ contract MultiFeeDistribution is ReentrancyGuard, Ownable {
         } else {
             earnings[idx - 1].amount = earnings[idx - 1].amount.add(amount);
         }
-        stakingToken.mint(address(this), amount);
+        stakingTokenReserve.transfer(address(this), amount);
         emit Staked(user, amount);
     }
 

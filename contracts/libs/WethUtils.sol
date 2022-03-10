@@ -7,7 +7,7 @@ import "../interfaces/IWETH.sol";
 library WethUtils {
     using SafeERC20 for IWETH;
 
-    IWETH public constant weth = IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
+    IWETH public constant weth = IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //WFTM
 
     function isWeth(address token) internal pure returns (bool) {
         return address(weth) == token;

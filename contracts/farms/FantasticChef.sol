@@ -5,10 +5,10 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/IMultiFeeDistribution.sol";
+import "../interfaces/IFantasticStaking.sol";
 import "../interfaces/IRewarder.sol";
 
-contract FantasmChef is Ownable {
+contract FantasticChef is Ownable {
     using SafeERC20 for IERC20;
 
     struct UserInfo {
@@ -22,7 +22,7 @@ contract FantasmChef is Ownable {
         uint256 allocPoint;
     }
 
-    IMultiFeeDistribution public rewardMinter;
+    IFantasticStaking public rewardMinter;
 
     /// @notice Info of each MCV2 pool.
     PoolInfo[] public poolInfo;
@@ -289,8 +289,8 @@ contract FantasmChef is Ownable {
 
     /// @notice Set the address of rewardMinter.  Can only be called ONCE by the owner.
     /// @param _rewardMinter Address of MultiFeeDistribution contract
-    function setRewardMinter(IMultiFeeDistribution _rewardMinter) external {
-        require(address(rewardMinter) == address(0), "FantasmChef::setRewardMinter: Cannot redefine rewardMinter");
+    function setRewardMinter(IFantasticStaking _rewardMinter) external {
+        require(address(rewardMinter) == address(0), "FantasticChef::setRewardMinter: Cannot redefine rewardMinter");
         rewardMinter = _rewardMinter;
     }
 

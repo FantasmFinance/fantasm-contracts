@@ -8,41 +8,41 @@ import "../interfaces/IPairOracle.sol";
 contract MasterOracle is Ownable {
     uint256 private constant PRICE_PRECISION = 1e18;
 
-    IPairOracle public oracleXftm;
-    IPairOracle public oracleFantasm;
+    IPairOracle public oracleXToken;
+    IPairOracle public oracleYToken;
 
-    address public xftm;
-    address public fantasm;
+    address public xToken;
+    address public yToken;
 
     constructor(
-        address _xftm,
-        address _fantasm,
-        address _oracleXftm,
-        address _oracleFantasm
+        address _xToken,
+        address _yToken,
+        address _oracleXToken,
+        address _oracleYToken
     ) {
-        require(_xftm != address(0), "Invalid address");
-        require(_fantasm != address(0), "Invalid address");
-        require(_oracleXftm != address(0), "Invalid address");
-        require(_oracleFantasm != address(0), "Invalid address");
-        xftm = _xftm;
-        fantasm = _fantasm;
-        oracleXftm = IPairOracle(_oracleXftm);
-        oracleFantasm = IPairOracle(_oracleFantasm);
+        require(_xToken != address(0), "Invalid address");
+        require(_yToken != address(0), "Invalid address");
+        require(_oracleXToken != address(0), "Invalid address");
+        require(_oracleYToken != address(0), "Invalid address");
+        xToken = _xToken;
+        yToken = _yToken;
+        oracleXToken = IPairOracle(_oracleXToken);
+        oracleYToken = IPairOracle(_oracleYToken);
     }
 
-    function getFantasmPrice() public view returns (uint256) {
-        return oracleFantasm.spot(fantasm, PRICE_PRECISION);
+    function getXTokenPrice() public view returns (uint256) {
+        return oracleXToken.spot(xToken, PRICE_PRECISION);
     }
 
-    function getXftmPrice() public view returns (uint256) {
-        return oracleXftm.spot(xftm, PRICE_PRECISION);
+    function getYTokenPrice() public view returns (uint256) {
+        return oracleYToken.spot(yToken, PRICE_PRECISION);
     }
 
-    function getXftmTWAP() public view returns (uint256) {
-        return oracleXftm.twap(xftm, PRICE_PRECISION);
+    function getXTokenTWAP() public view returns (uint256) {
+        return oracleXToken.twap(xToken, PRICE_PRECISION);
     }
 
-    function getFantasmTWAP() public view returns (uint256) {
-        return oracleFantasm.twap(fantasm, PRICE_PRECISION);
+    function getYTokenTWAP() public view returns (uint256) {
+        return oracleYToken.twap(yToken, PRICE_PRECISION);
     }
 }

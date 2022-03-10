@@ -3,9 +3,11 @@
 pragma solidity 0.8.4;
 
 interface IMasterOracle {
-    function getFantasmPrice() external view returns (uint256);
+    function getXTokenPrice() external view returns (uint256);
 
-    function getFantasmTWAP() external view returns (uint256);
+    function getYTokenPrice() external view returns (uint256);
 
-    function getXftmTWAP() external view returns (uint256);
+    function getYTokenTWAP() external view returns (uint256);
+
+    function getXTokenTWAP() external view returns (uint256);
 }
