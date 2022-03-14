@@ -38,6 +38,8 @@ contract FantasticChef is Ownable {
 
     uint256 public rewardPerSecond;
     uint256 private constant ACC_REWARD_PRECISION = 1e12;
+    uint256 private constant MAX_REWARD_PER_SECOND = 1e18; // 1 token per second
+    uint256 private constant MAX_NUM_OF_POOLS = 24;
 
     /* ========== PUBLIC FUNCTIONS ========== */
 
@@ -256,6 +258,7 @@ contract FantasticChef is Ownable {
         rewarder.push(_rewarder);
 
         poolInfo.push(PoolInfo({allocPoint: allocPoint, lastRewardTime: block.timestamp, accRewardPerShare: 0}));
+        require(poolInfo.length <= MAX_NUM_OF_POOLS, "FantasticChef::add: > MAX_NUM_OF_POOLS");
         emit LogPoolAddition(lpToken.length - 1, allocPoint, _lpToken, _rewarder);
     }
 
@@ -282,6 +285,7 @@ contract FantasticChef is Ownable {
     /// @notice Sets the reward per second to be distributed. Can only be called by the owner.
     /// @param _rewardPerSecond The amount of reward to be distributed per second.
     function setRewardPerSecond(uint256 _rewardPerSecond) public onlyOwner {
+        require(_rewardPerSecond <= MAX_REWARD_PER_SECOND, "FantasticChef::setRewardPerSecond: > MAX_REWARD_PER_SECOND");
         massUpdatePools();
         rewardPerSecond = _rewardPerSecond;
         emit LogRewardPerSecond(_rewardPerSecond);

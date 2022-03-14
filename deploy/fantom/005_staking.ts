@@ -47,7 +47,7 @@ const func: DeployFunction = async ({deployments, getNamedAccounts, wellknown}) 
 func.tags = ['staking'];
 
 func.skip = async ({network}) => {
-  return network.name !== 'avax';
+  return network.name !== 'fantom';
 };
 
 export default func;

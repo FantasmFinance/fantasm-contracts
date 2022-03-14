@@ -43,7 +43,7 @@ const func: DeployFunction = async ({deployments, getNamedAccounts, wellknown}) 
 func.tags = ['swap_strat'];
 
 func.skip = async ({network}) => {
-  return network.name !== 'avax';
+  return network.name !== 'fantom';
 };
 
 export default func;

@@ -34,11 +34,4 @@ abstract contract XToken is ERC20Burnable {
     function mint(address _address, uint256 _amount) external onlyMinter {
         _mint(_address, _amount);
     }
-
-    /// @notice Burn XToken
-    /// @param _from Address where token will be burnt from
-    /// @param _amount Amount of XToken will be burnt
-    function burn(address _from, uint256 _amount) external onlyMinter {
-        _burn(_from, _amount);
-    }
 }

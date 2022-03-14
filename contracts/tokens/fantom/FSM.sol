@@ -9,10 +9,9 @@ contract FSM is YToken {
 
     constructor(
         string memory _name,
-        string memory _symbol,
-        address _reserve
+        string memory _symbol
     ) YToken(_name, _symbol) {
-        _mint(_reserve, maxTotalSupply());
+        _mint(msg.sender, maxTotalSupply());
     }
 
     // ===== OVERRIDEN =============

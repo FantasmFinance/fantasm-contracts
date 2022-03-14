@@ -271,7 +271,7 @@ contract Pool is Ownable, ReentrancyGuard {
         userInfo[_sender].lastAction = block.number;
 
         // Move all external functions to the end
-        xToken.burn(_sender, _xTokenIn);
+        xToken.burnFrom(_sender, _xTokenIn);
         transferToTreasury(_fee);
 
         emit Redeem(_sender, _xTokenIn, _ethOut, _yTokenOut, _fee);

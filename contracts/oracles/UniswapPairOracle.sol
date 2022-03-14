@@ -3,16 +3,16 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "../libs/FixedPoint.sol";
 import "../libs/UQ112x112.sol";
 
 contract UniswapPairOracle is Ownable {
     using FixedPoint for *;
-    using SafeMath for uint256;
 
     uint256 public PERIOD = 3600; // 60-minute TWAP (Time-Weighted Average Price)
+    uint256 private constant MAXIMUM_PERIOD = 3600 * 48; // 48 hours
+    uint256 private constant LENIENCY = 3600 * 12; // 12 hours
 
     IUniswapV2Pair public immutable pair;
     address public immutable token0;
@@ -38,27 +38,33 @@ contract UniswapPairOracle is Ownable {
     }
 
     function setPeriod(uint256 _period) external onlyOwner {
+        require(_period <= MAXIMUM_PERIOD, "PairOracle::setPeriod: > MAXIMUM_PERIOD");
         PERIOD = _period;
+        emit PeriodUpdated(_period);
     }
 
     function update() external {
         (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) = currentCumulativePrices(address(pair));
-        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired
+        unchecked {
+            uint32 timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired
 
-        // Ensure that at least one full period has passed since the last update
-        require(timeElapsed >= PERIOD, "PairOracle: PERIOD_NOT_ELAPSED");
+            // Ensure that at least one full period has passed since the last update
+            require(timeElapsed >= PERIOD, "PairOracle: PERIOD_NOT_ELAPSED");
 
-        // Overflow is desired, casting never truncates
-        // Cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-        price0Average = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed));
-        price1Average = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed));
-        price0CumulativeLast = price0Cumulative;
-        price1CumulativeLast = price1Cumulative;
-        blockTimestampLast = blockTimestamp;
+            // Overflow is desired, casting never truncates
+            // Cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+            price0Average = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed));
+            price1Average = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed));
+            price0CumulativeLast = price0Cumulative;
+            price1CumulativeLast = price1Cumulative;
+            blockTimestampLast = blockTimestamp;
+        }
     }
 
     // Note this will always return 0 before update has been called successfully for the first time.
     function twap(address token, uint256 pricePrecision) external view returns (uint256 amountOut) {
+        uint32 timeElapsed = currentBlockTimestamp() - blockTimestampLast;
+        require(timeElapsed < PERIOD + LENIENCY, "PairOracle::twap: Oracle was staled");
         if (token == token0) {
             amountOut = price0Average.mul(pricePrecision).decode144();
         } else {
@@ -78,9 +84,9 @@ contract UniswapPairOracle is Ownable {
         uint8 _token1MissingDecimals = 18 - (ERC20(_token1).decimals());
         uint256 _price = 0;
         if (token == _token0) {
-            _price = _reserve1.mul(10**_token1MissingDecimals).mul(pricePrecision).div(_reserve0);
+            _price = (_reserve1 * (10**_token1MissingDecimals) * pricePrecision) / _reserve0;
         } else {
-            _price = _reserve0.mul(10**_token0MissingDecimals).mul(pricePrecision).div(_reserve1);
+            _price = (_reserve0 * (10**_token0MissingDecimals) * pricePrecision) / _reserve1;
         }
         return _price;
     }
@@ -106,14 +112,19 @@ contract UniswapPairOracle is Ownable {
 
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         (uint112 reserve0, uint112 reserve1, uint32 _blockTimestampLast) = uniswapPair.getReserves();
-        if (_blockTimestampLast != blockTimestamp) {
-            // subtraction overflow is desired
-            uint32 timeElapsed = blockTimestamp - _blockTimestampLast;
-            // addition overflow is desired
-            // counterfactual
-            price0Cumulative += uint256(FixedPoint.fraction(reserve1, reserve0)._x) * timeElapsed;
-            // counterfactual
-            price1Cumulative += uint256(FixedPoint.fraction(reserve0, reserve1)._x) * timeElapsed;
+        unchecked {
+            if (_blockTimestampLast != blockTimestamp) {
+                // subtraction overflow is desired
+                uint32 timeElapsed = blockTimestamp - _blockTimestampLast;
+                // addition overflow is desired
+                // counterfactual
+                price0Cumulative += uint256(FixedPoint.fraction(reserve1, reserve0)._x) * timeElapsed;
+                // counterfactual
+                price1Cumulative += uint256(FixedPoint.fraction(reserve0, reserve1)._x) * timeElapsed;
+            }
         }
     }
+
+    // EVENTS
+    event PeriodUpdated(uint256 _period);
 }

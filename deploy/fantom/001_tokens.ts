@@ -4,24 +4,6 @@ const func: DeployFunction = async ({deployments, getNamedAccounts}) => {
   const {deploy, get, execute} = deployments;
   const {deployer} = await getNamedAccounts();
 
-  const reserve = await deploy('FsmReserve', {
-    from: deployer,
-    log: true,
-    args: [],
-  });
-
-  await deploy('FsmTreasuryFund', {
-    from: deployer,
-    log: true,
-    args: [reserve.address],
-  });
-
-  await deploy('FsmDaoFund', {
-    from: deployer,
-    log: true,
-    args: [reserve.address],
-  });
-
   await deploy('XFTM', {
     contract: 'XFTM',
     from: deployer,
@@ -33,18 +15,26 @@ const func: DeployFunction = async ({deployments, getNamedAccounts}) => {
     contract: 'FSM',
     from: deployer,
     log: true,
-    args: ['Fantastic Protocol FSM Token', 'FSM', reserve.address],
+    args: ['Fantastic Protocol FSM Token', 'FSM'],
   });
 
-  await execute(
-    'FsmReserve',
-    {
-      from: deployer,
-      log: true,
-    },
-    'initialize',
-    fsm.address
-  );
+  const reserve = await deploy('FsmReserve', {
+    from: deployer,
+    log: true,
+    args: [fsm.address],
+  });
+
+  await deploy('FsmTreasuryFund', {
+    from: deployer,
+    log: true,
+    args: [fsm.address],
+  });
+
+  await deploy('FsmDaoFund', {
+    from: deployer,
+    log: true,
+    args: [fsm.address],
+  });
 };
 
 func.tags = ['tokens'];
