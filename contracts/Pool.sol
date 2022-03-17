@@ -134,10 +134,10 @@ contract Pool is Ownable, ReentrancyGuard {
             uint256 _ethSwapIn
         )
     {
-        uint256 _yTokenPrice = oracle.getYTokenPrice();
-        require(_yTokenPrice > 0, "Pool::calcMint: Invalid YToken price");
+        uint256 _yTokenTwap = oracle.getYTokenTWAP();
+        require(_yTokenTwap > 0, "Pool::calcMint: Invalid YToken price");
         _ethSwapIn = (_ethIn * (COLLATERAL_RATIO_MAX - collateralRatio)) / COLLATERAL_RATIO_MAX;
-        _yTokenOutTwap = (_ethSwapIn * PRICE_PRECISION) / _yTokenPrice;
+        _yTokenOutTwap = (_ethSwapIn * PRICE_PRECISION) / _yTokenTwap;
         _ethFee = (_ethIn * mintingFee * collateralRatio) / COLLATERAL_RATIO_MAX / PRECISION;
         _xTokenOut = _ethIn - ((_ethIn * mintingFee) / PRECISION);
     }
