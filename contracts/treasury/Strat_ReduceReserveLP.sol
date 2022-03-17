@@ -43,7 +43,7 @@ contract StratReduceReserveLP is Ownable {
 
     /// @notice Remove liqudity, buyback YToken and burn
     /// @param _amount Amount of Liquidity LP token
-    function reduceReserve(uint256 _amount) external onlyOwner {
+    function reduceReserve(uint256 _amount, uint256 _minYTokenAmount) external onlyOwner {
         require(_amount > 0, "StratReduceReserveLP::reduceReserve:invalid amount");
         require(yTokenFund != address(0), "StratReduceReserveLP::reduceReserve:invalid address");
 
@@ -55,7 +55,7 @@ contract StratReduceReserveLP is Ownable {
         swapRouter.removeLiquidity(address(yToken), address(WethUtils.weth), _amount, 0, 0, address(this), block.timestamp + SWAP_TIMEOUT);
 
         // 2. swap Weth -> YToken
-        swap(WethUtils.weth.balanceOf(address(this)), 0);
+        swap(WethUtils.weth.balanceOf(address(this)), _minYTokenAmount);
 
         // 3. Burn YToken in the contract
         uint256 _yTokenAmt = yToken.balanceOf(address(this));
@@ -74,6 +74,5 @@ contract StratReduceReserveLP is Ownable {
 
     /* ========== EVENTS ============ */
 
-    event SwapConfigUpdated(address indexed _router, uint256 _slippage, address[] _paths);
     event ReserveReduced(uint256 _lpAmount, uint256 _yTokenBurnAmt);
 }

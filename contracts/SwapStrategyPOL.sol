@@ -5,7 +5,7 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISwapStrategy.sol";
-import "./interfaces/IYToken.sol";
+import "./interfaces/IMasterOracle.sol";
 import "./libs/WethUtils.sol";
 
 /*
@@ -17,32 +17,33 @@ import "./libs/WethUtils.sol";
 contract SwapStrategyPOL is ISwapStrategy {
     using SafeERC20 for IWETH;
     using SafeERC20 for IERC20;
-    using SafeERC20 for IYToken;
 
-    IYToken public immutable yToken;
+    IERC20 public immutable yToken;
     IERC20 public immutable lp;
     IUniswapV2Router02 public immutable swapRouter;
     address[] public swapPaths;
     address public immutable treasury;
     uint256 public immutable swapSlippage;
-
-    uint256 private constant SWAP_TIMEOUT = 10 minutes;
     uint256 private constant SLIPPAGE_PRECISION = 1e6;
 
+    IMasterOracle public oracle;
+
     constructor(
-        IYToken _yToken,
-        IERC20 _lp,
+        address _yToken,
+        address _lp,
         address _treasury,
-        IUniswapV2Router02 _swapRouter,
+        address _swapRouter,
         uint256 _swapSlippage,
-        address[] memory _swapPaths
+        address[] memory _swapPaths,
+        address _oracle
     ) {
-        yToken = _yToken;
-        lp = _lp;
+        yToken = IERC20(_yToken);
+        lp = IERC20(_lp);
         treasury = _treasury;
-        swapRouter = _swapRouter;
+        swapRouter = IUniswapV2Router02(_swapRouter);
         swapSlippage = _swapSlippage;
         swapPaths = _swapPaths;
+        oracle = IMasterOracle(_oracle);
     }
 
     /* ========== VIEW FUNCTIONS ============ */
@@ -73,7 +74,7 @@ contract SwapStrategyPOL is ISwapStrategy {
     /// @notice Add liquidity for YToken/WETH with the current balance
     function swap(uint256 _wethToSwap, uint256 _minYTokenOut) internal {
         WethUtils.weth.safeIncreaseAllowance(address(swapRouter), _wethToSwap);
-        swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(_wethToSwap, _minYTokenOut, swapPaths, address(this), block.timestamp + SWAP_TIMEOUT);
+        swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(_wethToSwap, _minYTokenOut, swapPaths, address(this), block.timestamp);
     }
 
     /// @notice Add liquidity for YToken/WETH with the current balance and Move LP to Treasury
@@ -82,6 +83,8 @@ contract SwapStrategyPOL is ISwapStrategy {
         uint256 yTokenAmt = yToken.balanceOf(address(this));
         uint256 wethAmt = WethUtils.weth.balanceOf(address(this));
         if (yTokenAmt > 0 && wethAmt > 0) {
+            uint256 _minYTokenOut = (yTokenAmt * (SLIPPAGE_PRECISION - swapSlippage)) / SLIPPAGE_PRECISION;
+            uint256 _minWethOut = (yTokenAmt * (SLIPPAGE_PRECISION - swapSlippage)) / SLIPPAGE_PRECISION;
             yToken.safeIncreaseAllowance(address(swapRouter), yTokenAmt);
             WethUtils.weth.safeIncreaseAllowance(address(swapRouter), wethAmt);
             (uint256 _amountA, uint256 _amountB, uint256 _liquidity) = swapRouter.addLiquidity(
@@ -89,10 +92,10 @@ contract SwapStrategyPOL is ISwapStrategy {
                 address(WethUtils.weth),
                 yTokenAmt,
                 wethAmt,
-                0,
-                0,
+                _minYTokenOut,
+                _minWethOut,
                 treasury,
-                block.timestamp + SWAP_TIMEOUT
+                block.timestamp
             );
             emit LiquidityAdded(_liquidity, _amountA, _amountB);
         }
@@ -100,6 +103,5 @@ contract SwapStrategyPOL is ISwapStrategy {
 
     /* ========== EVENTS ============ */
 
-    event SwapConfigUpdated(address indexed _router, uint256 _slippage, address[] _paths);
     event LiquidityAdded(uint256 _lpBalance, uint256 _wethAmt, uint256 _yTokenAmt);
 }

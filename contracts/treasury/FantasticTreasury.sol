@@ -17,6 +17,7 @@ contract FantasticTreasury is Ownable {
     using Address for address;
 
     mapping(address => bool) public strategies;
+    address[] public strategiesArray;
     IFantasticStaking public staking;
 
     constructor(IFantasticStaking _staking) {
@@ -50,6 +51,7 @@ contract FantasticTreasury is Ownable {
         require(_strategy != address(0), "FantasticTreasury::addStrategy: invalid address");
         require(!strategies[_strategy], "FantasticTreasury::addStrategy: strategy was previously added");
         strategies[_strategy] = true;
+        strategiesArray.push(_strategy);
         emit StrategyAdded(_strategy);
     }
 
@@ -58,6 +60,14 @@ contract FantasticTreasury is Ownable {
     function removeStrategy(address _strategy) external onlyOwner {
         require(strategies[_strategy], "FantasticTreasury::removeStrategy: strategy not found");
         delete strategies[_strategy];
+
+        for (uint256 i = 0; i < strategiesArray.length; i++) {
+            if (strategiesArray[i] == _strategy) {
+                strategiesArray[i] = address(0);
+                // This will leave a null in the array and keep the indices the same
+                break;
+            }
+        }
         emit StrategyRemoved(_strategy);
     }
 

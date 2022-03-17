@@ -97,6 +97,8 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
         rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
         rewardData[_rewardsToken].periodFinish = block.timestamp;
         rewardDistributors[_rewardsToken][_distributor] = true;
+        emit RewardTokenAdded(_rewardsToken);
+        emit RewardDistributorApproved(_rewardsToken, _distributor, true);
     }
 
     // Modify approval for an address to call notifyRewardAmount
@@ -107,6 +109,7 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
     ) external onlyOwner {
         require(rewardData[_rewardsToken].lastUpdateTime > 0, "MultiFeeDistribution::approveRewardDistributor: Invalid");
         rewardDistributors[_rewardsToken][_distributor] = _approved;
+        emit RewardDistributorApproved(_rewardsToken, _distributor, _approved);
     }
 
     /* ========== VIEWS ========== */
@@ -356,7 +359,7 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
     }
 
     // Withdraw full unlocked balance and claim pending rewards
-    function exit() external updateReward(msg.sender) {
+    function emergencyWithdraw() external updateReward(msg.sender) {
         (uint256 amount, uint256 penaltyAmount) = withdrawableBalance(msg.sender);
         delete userEarnings[msg.sender];
         Balances storage bal = balances[msg.sender];
@@ -394,6 +397,8 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
         lockedSupply = lockedSupply.sub(amount);
         stakingToken.safeTransfer(msg.sender, amount);
     }
+
+
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
@@ -462,6 +467,8 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
     /* ========== EVENTS ========== */
 
     event RewardAdded(uint256 reward);
+    event RewardTokenAdded(address indexed rewardTokenAddress);
+    event RewardDistributorApproved(address indexed rewardAddress, address indexed distributor, bool approved);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
