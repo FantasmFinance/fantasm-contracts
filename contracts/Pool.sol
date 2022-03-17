@@ -63,6 +63,7 @@ contract Pool is Ownable, ReentrancyGuard {
     uint256 public priceTarget = 1e18; // = 1; 1 XToken pegged to the value of 1 ETH
     uint256 public priceBand = 5e15; // = 0.005; CR will be adjusted if XToken > 1.005 ETH or XToken < 0.995 ETH
     uint256 public minCollateralRatio = 1e6;
+    uint256 public yTokenSlippage = 100000; // 10%
     bool public collateralRatioPaused = false;
 
     // fees
@@ -120,7 +121,7 @@ contract Pool is Ownable, ReentrancyGuard {
     /// @notice Calculate the expected results for zap minting
     /// @param _ethIn Amount of Collateral token input.
     /// @return _xTokenOut : the amount of XToken output.
-    /// @return _yTokenOut : the amount of YToken output by swapping
+    /// @return _yTokenOutTwap : the amount of YToken output by swapping based on Twap price
     /// @return _ethFee : the fee amount in Collateral token.
     /// @return _ethSwapIn : the amount of Collateral token to swap
     function calcMint(uint256 _ethIn)
@@ -128,7 +129,7 @@ contract Pool is Ownable, ReentrancyGuard {
         view
         returns (
             uint256 _xTokenOut,
-            uint256 _yTokenOut,
+            uint256 _yTokenOutTwap,
             uint256 _ethFee,
             uint256 _ethSwapIn
         )
@@ -136,7 +137,7 @@ contract Pool is Ownable, ReentrancyGuard {
         uint256 _yTokenPrice = oracle.getYTokenPrice();
         require(_yTokenPrice > 0, "Pool::calcMint: Invalid YToken price");
         _ethSwapIn = (_ethIn * (COLLATERAL_RATIO_MAX - collateralRatio)) / COLLATERAL_RATIO_MAX;
-        _yTokenOut = (_ethSwapIn * PRICE_PRECISION) / _yTokenPrice;
+        _yTokenOutTwap = (_ethSwapIn * PRICE_PRECISION) / _yTokenPrice;
         _ethFee = (_ethIn * mintingFee * collateralRatio) / COLLATERAL_RATIO_MAX / PRECISION;
         _xTokenOut = _ethIn - ((_ethIn * mintingFee) / PRECISION);
     }
@@ -144,7 +145,8 @@ contract Pool is Ownable, ReentrancyGuard {
     /// @notice Calculate the expected results for redemption
     /// @param _xTokenIn Amount of XToken input.
     /// @return _ethOut : the amount of Eth output
-    /// @return _yTokenOut : the amount of YToken output
+    /// @return _yTokenOutSpot : the amount of YToken output based on Spot prrice
+    /// @return _yTokenOutTwap : the amount of YToken output based on TWAP
     /// @return _ethFee : the fee amount in Eth
     /// @return _requiredEthBalance : required Eth balance in the pool
     function calcRedeem(uint256 _xTokenIn)
@@ -152,17 +154,20 @@ contract Pool is Ownable, ReentrancyGuard {
         view
         returns (
             uint256 _ethOut,
-            uint256 _yTokenOut,
+            uint256 _yTokenOutSpot,
+            uint256 _yTokenOutTwap,
             uint256 _ethFee,
             uint256 _requiredEthBalance
         )
     {
         uint256 _yTokenPrice = oracle.getYTokenPrice();
+        uint256 _yTokenTWAP = oracle.getYTokenTWAP();
         require(_yTokenPrice > 0, "Pool::calcRedeem: Invalid YToken price");
 
         _requiredEthBalance = (_xTokenIn * collateralRatio) / PRECISION;
         if (collateralRatio < COLLATERAL_RATIO_MAX) {
-            _yTokenOut = (_xTokenIn * (COLLATERAL_RATIO_MAX - collateralRatio) * (PRECISION - redemptionFee) * PRICE_PRECISION) / COLLATERAL_RATIO_MAX / PRECISION / _yTokenPrice;
+            _yTokenOutSpot = (_xTokenIn * (COLLATERAL_RATIO_MAX - collateralRatio) * (PRECISION - redemptionFee) * PRICE_PRECISION) / COLLATERAL_RATIO_MAX / PRECISION / _yTokenPrice;
+            _yTokenOutTwap = (_xTokenIn * (COLLATERAL_RATIO_MAX - collateralRatio) * (PRECISION - redemptionFee) * PRICE_PRECISION) / COLLATERAL_RATIO_MAX / PRECISION / _yTokenTWAP;
         }
 
         if (collateralRatio > 0) {
@@ -225,13 +230,13 @@ contract Pool is Ownable, ReentrancyGuard {
         uint256 _ethIn = msg.value;
         address _sender = msg.sender;
 
-        (uint256 _xTokenOut, uint256 _yTokenOut, uint256 _fee, uint256 _wethSwapIn) = calcMint(_ethIn);
+        (uint256 _xTokenOut, uint256 _yTokenOutTwap, uint256 _fee, uint256 _wethSwapIn) = calcMint(_ethIn);
         require(_xTokenOut >= _minXTokenOut, "Pool::mint: > slippage");
 
         WethUtils.wrap(_ethIn);
-        if (_yTokenOut > 0 && _wethSwapIn > 0) {
+        if (_yTokenOutTwap > 0 && _wethSwapIn > 0) {
             WethUtils.weth.safeIncreaseAllowance(address(swapStrategy), _wethSwapIn);
-            swapStrategy.execute(_wethSwapIn, _yTokenOut);
+            swapStrategy.execute(_wethSwapIn, _yTokenOutTwap);
         }
 
         if (_xTokenOut > 0) {
@@ -252,20 +257,26 @@ contract Pool is Ownable, ReentrancyGuard {
         require(!redeemPaused, "Pool::redeem: Redeeming is paused");
 
         address _sender = msg.sender;
-        (uint256 _ethOut, uint256 _yTokenOut, uint256 _fee, uint256 _requiredEthBalance) = calcRedeem(_xTokenIn);
+        (uint256 _ethOut, uint256 _yTokenOutSpot, uint256 _yTokenOutTwap, uint256 _fee, uint256 _requiredEthBalance) = calcRedeem(_xTokenIn);
 
         // Check if collateral balance meets and meet output expectation
         require(_requiredEthBalance <= usableCollateralBalance(), "Pool::redeem: > ETH balance");
-        require(_minEthOut <= _ethOut && _minYTokenOut <= _yTokenOut, "Pool::redeem: >slippage");
+
+        // Prevent price manipulation to get more yToken
+        if (_yTokenOutSpot > _yTokenOutTwap) {
+            require(_yTokenOutSpot-_yTokenOutTwap > (_yTokenOutTwap * yTokenSlippage / PRECISION), "Pool::redeem: > yTokenSlippage");
+        }
+
+        require(_minEthOut <= _ethOut && _minYTokenOut <= _yTokenOutSpot, "Pool::redeem: >slippage");
 
         if (_ethOut > 0) {
             userInfo[_sender].ethBalance = userInfo[_sender].ethBalance + _ethOut;
             unclaimedEth = unclaimedEth + _ethOut;
         }
 
-        if (_yTokenOut > 0) {
-            userInfo[_sender].yTokenBalance = userInfo[_sender].yTokenBalance + _yTokenOut;
-            unclaimedYToken = unclaimedYToken + _yTokenOut;
+        if (_yTokenOutSpot > 0) {
+            userInfo[_sender].yTokenBalance = userInfo[_sender].yTokenBalance + _yTokenOutSpot;
+            unclaimedYToken = unclaimedYToken + _yTokenOutSpot;
         }
 
         userInfo[_sender].lastAction = block.number;
@@ -274,7 +285,7 @@ contract Pool is Ownable, ReentrancyGuard {
         xToken.burnFrom(_sender, _xTokenIn);
         transferToTreasury(_fee);
 
-        emit Redeem(_sender, _xTokenIn, _ethOut, _yTokenOut, _fee);
+        emit Redeem(_sender, _xTokenIn, _ethOut, _yTokenOutSpot, _fee);
     }
 
     /**
@@ -423,6 +434,7 @@ contract Pool is Ownable, ReentrancyGuard {
     function setTreasury(address _treasury) external {
         require(treasury == address(0), "Pool::setTreasury: not allowed");
         treasury = _treasury;
+        emit TreasurySet(_treasury);
     }
 
     /// @notice Move weth to treasury
@@ -445,4 +457,5 @@ contract Pool is Ownable, ReentrancyGuard {
     event FeesUpdated(uint256 _mintingFee, uint256 _redemptionFee);
     event Recollateralized(address indexed _sender, uint256 _amount);
     event SwapStrategyChanged(address indexed _swapper);
+    event TreasurySet(address indexed _treasury);
 }
