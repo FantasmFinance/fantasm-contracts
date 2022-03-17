@@ -84,7 +84,7 @@ contract SwapStrategyPOL is ISwapStrategy {
         uint256 wethAmt = WethUtils.weth.balanceOf(address(this));
         if (yTokenAmt > 0 && wethAmt > 0) {
             uint256 _minYTokenOut = (yTokenAmt * (SLIPPAGE_PRECISION - swapSlippage)) / SLIPPAGE_PRECISION;
-            uint256 _minWethOut = (yTokenAmt * (SLIPPAGE_PRECISION - swapSlippage)) / SLIPPAGE_PRECISION;
+            uint256 _minWethOut = (wethAmt * (SLIPPAGE_PRECISION - swapSlippage)) / SLIPPAGE_PRECISION;
             yToken.safeIncreaseAllowance(address(swapRouter), yTokenAmt);
             WethUtils.weth.safeIncreaseAllowance(address(swapRouter), wethAmt);
             (uint256 _amountA, uint256 _amountB, uint256 _liquidity) = swapRouter.addLiquidity(
