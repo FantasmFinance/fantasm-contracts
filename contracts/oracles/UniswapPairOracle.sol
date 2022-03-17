@@ -64,7 +64,7 @@ contract UniswapPairOracle is Ownable {
     // Note this will always return 0 before update has been called successfully for the first time.
     function twap(address token, uint256 pricePrecision) external view returns (uint256 amountOut) {
         uint32 timeElapsed = currentBlockTimestamp() - blockTimestampLast;
-        require(timeElapsed > PERIOD + LENIENCY, "PairOracle::twap: Oracle was staled");
+        require(timeElapsed <= PERIOD + LENIENCY, "PairOracle::twap: Oracle was staled");
         if (token == token0) {
             amountOut = price0Average.mul(pricePrecision).decode144();
         } else {
