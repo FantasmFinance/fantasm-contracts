@@ -20,7 +20,6 @@ contract StratReduceReserveLP is Ownable {
     IUniswapV2Router02 public swapRouter;
     address[] public swapPaths;
 
-    uint256 private constant SWAP_TIMEOUT = 10 minutes;
     uint256 private constant SLIPPAGE_PRECISION = 1e6;
 
     constructor(
@@ -52,7 +51,7 @@ contract StratReduceReserveLP is Ownable {
 
         // 1. remove liquidity
         lp.safeIncreaseAllowance(address(swapRouter), _amount);
-        swapRouter.removeLiquidity(address(yToken), address(WethUtils.weth), _amount, 0, 0, address(this), block.timestamp + SWAP_TIMEOUT);
+        swapRouter.removeLiquidity(address(yToken), address(WethUtils.weth), _amount, 0, 0, address(this), block.timestamp);
 
         // 2. swap Weth -> YToken
         swap(WethUtils.weth.balanceOf(address(this)), _minYTokenAmount);
@@ -69,7 +68,7 @@ contract StratReduceReserveLP is Ownable {
     /// @notice Add liquidity for YToken/WETH with the current balance
     function swap(uint256 _wethToSwap, uint256 _minYTokenOut) internal {
         WethUtils.weth.safeIncreaseAllowance(address(swapRouter), _wethToSwap);
-        swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(_wethToSwap, _minYTokenOut, swapPaths, address(this), block.timestamp + SWAP_TIMEOUT);
+        swapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(_wethToSwap, _minYTokenOut, swapPaths, address(this), block.timestamp);
     }
 
     /* ========== EVENTS ============ */
