@@ -5,7 +5,6 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/ISwapStrategy.sol";
-import "./interfaces/IMasterOracle.sol";
 import "./libs/WethUtils.sol";
 
 /*
@@ -26,16 +25,13 @@ contract SwapStrategyPOL is ISwapStrategy {
     uint256 public immutable swapSlippage;
     uint256 private constant SLIPPAGE_PRECISION = 1e6;
 
-    IMasterOracle public oracle;
-
     constructor(
         address _yToken,
         address _lp,
         address _treasury,
         address _swapRouter,
         uint256 _swapSlippage,
-        address[] memory _swapPaths,
-        address _oracle
+        address[] memory _swapPaths
     ) {
         yToken = IERC20(_yToken);
         lp = IERC20(_lp);
@@ -43,7 +39,6 @@ contract SwapStrategyPOL is ISwapStrategy {
         swapRouter = IUniswapV2Router02(_swapRouter);
         swapSlippage = _swapSlippage;
         swapPaths = _swapPaths;
-        oracle = IMasterOracle(_oracle);
     }
 
     /* ========== VIEW FUNCTIONS ============ */
