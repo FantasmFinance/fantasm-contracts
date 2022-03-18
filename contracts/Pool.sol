@@ -344,14 +344,14 @@ contract Pool is Ownable, ReentrancyGuard {
         emit Recollateralized(msg.sender, _amount);
     }
 
-    function checkPriceFluctuation(uint256 _ySpotPrice, uint256 _yTwap) internal view {
+     function checkPriceFluctuation(uint256 _yAmountSpotPrice, uint256 _yAmountTwap) internal view {
         uint256 _diff;
-        if (_ySpotPrice > _yTwap) {
-            _diff = _ySpotPrice - _yTwap;
+        if (_yAmountSpotPrice > _yAmountTwap) {
+            _diff = _yAmountSpotPrice - _yAmountTwap;
         } else {
-            _diff = _yTwap - _ySpotPrice;
+            _diff = _yAmountTwap - _yAmountSpotPrice;
         }
-        require (_diff < ((_yTwap * yTokenSlippage) / PRECISION), "Pool::checkPriceFluctuation: > yTokenSlippage");
+        require(_diff <= ((_yAmountTwap * yTokenSlippage) / PRECISION), "Pool::checkPriceFluctuation: > yTokenSlippage");
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
