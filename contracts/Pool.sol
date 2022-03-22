@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IXToken.sol";
 import "./interfaces/IYToken.sol";
@@ -40,6 +41,11 @@ contract Pool is Ownable, ReentrancyGuard {
     /* ========== STATE VARIABLES ========== */
 
     mapping(address => UserInfo) public userInfo;
+
+    // Whitelist are contracts which can bypass 2-step minting/redemption,
+    // so that we can implement features like Zap to farm, Arbitraging to maintain token price
+    mapping(address => bool) public whitelist;
+    address[] public whitelistArray;
 
     uint256 public unclaimedEth;
     uint256 public unclaimedXToken;
@@ -290,9 +296,19 @@ contract Pool is Ownable, ReentrancyGuard {
      * @notice collect all minting and redemption
      */
     function collect() external nonReentrant {
-        address _sender = msg.sender;
-        require(userInfo[_sender].lastAction < block.number, "Pool::collect: <minimum_delay");
+        require(userInfo[msg.sender].lastAction < block.number, "Pool::collect: <minimum_delay");
+        doCollect(msg.sender);
+    }
 
+    /**
+     * @notice collect all minting and redemption via Zap
+     */
+    function zapCollect() external {
+        require(whitelist[msg.sender], "Pool::zapCollect: Only allow senders from whitelist");
+        doCollect(msg.sender);
+    }
+
+    function doCollect(address _sender) internal {
         bool _sendXToken = false;
         bool _sendYToken = false;
         bool _sendEth = false;
@@ -437,6 +453,31 @@ contract Pool is Ownable, ReentrancyGuard {
         emit OracleChanged(address(_oracle));
     }
 
+    /// @notice Add to Whitelist
+    /// @param _addr address of the safe contracts
+    function addWhitelist(address _addr) external onlyOwner {
+        require(_addr != address(0), "Pool::addWhitelist: invalid address");
+        require(!whitelist[_addr], "Pool::addWhitelist: Address existed");
+        whitelist[_addr] = true;
+        whitelistArray.push(_addr);
+        emit WhitelistAdded(_addr);
+    }
+
+    /// @notice Remove from Whitelist
+    /// @param _addr address of the safe contracts
+    function removeWhitelist(address _addr) external onlyOwner {
+        require(whitelist[_addr], "Pool::removeWhitelist: Address not found");
+        delete whitelist[_addr];
+        for (uint256 i = 0; i < whitelistArray.length; i++) {
+            if (whitelistArray[i] == _addr) {
+                whitelistArray[i] = address(0);
+                // This will leave a null in the array and keep the indices the same
+                break;
+            }
+        }
+        emit WhitelistRemoved(_addr);
+    }
+
     /// @notice Set yTokenSlipage
     function setYTokenSlippage(uint256 _slippage) external onlyOwner {
         require(_slippage <= 300000, "Pool::setYTokenSlippage: yTokenSlippage cannot be more than 30%");
@@ -474,4 +515,6 @@ contract Pool is Ownable, ReentrancyGuard {
     event SwapStrategyChanged(address indexed _swapper);
     event TreasurySet(address indexed _treasury);
     event YTokenSlippageSet(uint256 _slippage);
+    event WhitelistAdded(address indexed _addr);
+    event WhitelistRemoved(address indexed _addr);
 }

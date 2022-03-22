@@ -27,15 +27,6 @@ const func: DeployFunction = async ({deployments, getNamedAccounts, wellknown}) 
     args: [lp_xftm_eth.address],
   });
 
-  await execute('PairOracle_FSM_ETH', {from: deployer, log: true}, 'setPeriod', 1);
-  await execute('PairOracle_XFTM_ETH', {from: deployer, log: true}, 'setPeriod', 1);
-
-  await execute('PairOracle_FSM_ETH', {from: deployer, log: true}, 'update');
-  await execute('PairOracle_XFTM_ETH', {from: deployer, log: true}, 'update');
-
-  await execute('PairOracle_FSM_ETH', {from: deployer, log: true}, 'setPeriod', 3600);
-  await execute('PairOracle_XFTM_ETH', {from: deployer, log: true}, 'setPeriod', 3600);
-
   const xftm = await get('XFTM');
   const fsm = await get('FSM');
 

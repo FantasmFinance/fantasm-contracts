@@ -7,10 +7,7 @@ import "./Fund.sol";
 contract FsmTreasuryFund is Fund {
     uint256 public constant ALLOCATION = 3_000_000 ether; // 10%
     uint256 public constant VESTING_DURATION = 3 * 365 * 24 * 3600; // 3 years
-    uint256 public constant VESTING_START = 1647871200; // 21th Mar 2022, 2PM UTC
-
-     /*===================== CONSTRUCTOR =====================*/
-    constructor(address _fsm) Fund(_fsm) {}
+    uint256 public constant VESTING_START = 1648130400; // 24th Mar 2022, 2PM UTC
 
     /*===================== VIEWS =====================*/
 

@@ -4,10 +4,10 @@ pragma solidity 0.8.4;
 
 import "./Fund.sol";
 
-contract FsmDaoFund is Fund {
-    uint256 public constant ALLOCATION = 6_000_000 ether; // 20%
-    uint256 public constant VESTING_DURATION = 3 * 365 * 24 * 3600; // 3 years
-    uint256 public constant VESTING_START = 1648130400; // 24th Mar 2022, 2PM UTC
+contract FsmDevFund is Fund {
+    uint256 public constant ALLOCATION = 3_000_000 ether; // 10%
+    uint256 public constant VESTING_DURATION = 2 * 365 * 24 * 3600; // 2 years
+    uint256 public constant VESTING_START = 1652968800; // 19th May 2022, 2PM UTC
 
     /*===================== VIEWS =====================*/
 

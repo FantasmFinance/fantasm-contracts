@@ -12,6 +12,7 @@ contract UniswapPairOracle is Ownable {
 
     uint256 public PERIOD = 3600; // 60-minute TWAP (Time-Weighted Average Price)
     uint256 private constant MAXIMUM_PERIOD = 3600 * 48; // 48 hours
+    uint256 private constant MINIMUM_PERIOD = 60 * 10; // 10 minutes
     uint256 private constant LENIENCY = 3600 * 12; // 12 hours
 
     IUniswapV2Pair public immutable pair;
@@ -39,6 +40,7 @@ contract UniswapPairOracle is Ownable {
 
     function setPeriod(uint256 _period) external onlyOwner {
         require(_period <= MAXIMUM_PERIOD, "PairOracle::setPeriod: > MAXIMUM_PERIOD");
+        require(_period >= MINIMUM_PERIOD, "PairOracle::setPeriod: < MINIMUM_PERIOD");
         PERIOD = _period;
         emit PeriodUpdated(_period);
     }

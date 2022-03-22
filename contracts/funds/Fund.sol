@@ -3,16 +3,18 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-abstract contract Fund is Ownable {
+abstract contract Fund is Ownable, Initializable {
     using SafeERC20 for IERC20;
     IERC20 public fsm;
     uint256 public claimedAmount;
 
     /*===================== CONSTRUCTOR =====================*/
-    constructor(address _fsm) {
+
+    function initialize(address _fsm) external initializer {
         require(_fsm != address(0), "Fund::constructor: Invalid address");
         fsm = IERC20(_fsm);
     }

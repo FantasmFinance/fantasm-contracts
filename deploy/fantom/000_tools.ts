@@ -22,11 +22,6 @@ const func: DeployFunction = async ({deployments, getNamedAccounts}) => {
     log: true,
     args: [],
   });
-
-  await deploy('WethUtils', {
-    from: deployer,
-    log: true,
-  });
 };
 
 func.tags = ['tools'];

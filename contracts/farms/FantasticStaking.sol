@@ -53,6 +53,8 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
 
     // Addresses approved to call mint
     mapping(address => bool) public minters;
+    address[] public mintersArray;
+
     // reward token -> distributor -> is approved to add rewards
     mapping(address => mapping(address => bool)) public rewardDistributors;
 
@@ -80,6 +82,7 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
         stakingTokenReserve.setRewarder(address(this));
         for (uint256 i; i < _minters.length; i++) {
             minters[_minters[i]] = true;
+            mintersArray.push(_minters[i]);
         }
         // First reward MUST be the staking token or things will break
         // related to the 50% penalty and distribution to locked balances
@@ -349,7 +352,7 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
                 rewards[msg.sender][_rewardToken] = 0;
                 if (WethUtils.isWeth(_rewardToken)) {
                     WethUtils.unwrap(reward);
-                    payable(msg.sender).transfer(reward);
+                    Address.sendValue(payable(msg.sender), reward);
                 } else {
                     IERC20(_rewardToken).safeTransfer(msg.sender, reward);
                 }
