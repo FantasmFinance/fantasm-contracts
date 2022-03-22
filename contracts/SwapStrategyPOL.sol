@@ -78,7 +78,7 @@ contract SwapStrategyPOL is ISwapStrategy, Ownable {
             address(this),
             block.timestamp
         );
-        return _amounts[1];
+        return _amounts[swapPaths.length - 1];
     }
 
     /// @notice Add liquidity for YToken/WETH with the current balance and Move LP to Treasury
